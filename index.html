@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotizador</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+body { margin:0; background: linear-gradient(135deg,#eef2ff,#f9fafb); }
+h2 { text-align:center; margin:20px 0; color:#111827; }
+.container { max-width:1100px; margin:auto; padding:15px; }
+.card { background:white; padding:20px; margin:15px 0; border-radius:14px; border:1px solid #e5e7eb; box-shadow:0 8px 20px rgba(0,0,0,0.05); }
+input, textarea { width:100%; padding:10px; margin:6px 0; border-radius:8px; border:1px solid #d1d5db; }
+.row { display:flex; gap:10px; flex-wrap:wrap; }
+.row input { flex:1; min-width:120px; }
+button { padding:10px 15px; border:none; cursor:pointer; color:white; border-radius:8px; }
+.blue   { background:#2563eb; }
+.red    { background:#ef4444; }
+.green  { background:#10b981; }
+.gray   { background:#6b7280; }
+.orange { background:#f59e0b; }
+table { width:100%; border-collapse:collapse; table-layout:fixed; }
+th, td { padding:10px; text-align:center; word-wrap:break-word; overflow-wrap:break-word; word-break:break-all; }
+th { background:#e5e7eb; }
+
+#edit-banner {
+  display:none;
+  background:#fef3c7;
+  color:#92400e;
+  border-radius:8px;
+  padding:8px 14px;
+  margin-bottom:10px;
+  font-size:14px;
+  font-weight:600;
+}
+.editing .card-add {
+  border: 2px solid #f59e0b;
+}
+</style>
+</head>
+
+<body>
+<h2>Cotizador</h2>
+
+<div class="container" id="app">
+
+  <!-- INFO -->
+  <div class="card">
+    <h3>Information</h3>
+    <input id="empresa" placeholder="Company">
+    <input id="cliente" placeholder="Quote Subject">
+    <textarea id="notas" placeholder="Notes"></textarea>
+  </div>
+
+  <!-- ADD / EDIT -->
+  <div class="card card-add">
+    <div id="edit-banner">&#9998; Editing row — press Save to confirm</div>
+    <h3 id="form-title">Add Service/Product</h3>
+    <div class="row">
+      <input id="servicio" placeholder="Service/Product">
+      <input id="desc"     placeholder="Description">
+      <input id="qty"      type="number" placeholder="Quantity">
+      <input id="precio"   type="number" placeholder="Unit Price">
+      <button class="blue"   id="btn-add"    onclick="agregar()">Add</button>
+      <button class="gray"   id="btn-cancel" onclick="cancelarEdicion()" style="display:none">Cancel</button>
+      <button class="gray" onclick="limpiarFormulario()">&#10005; Clear</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <h3>List</h3>
+    <table>
+      <colgroup>
+        <col style="width:22%">
+        <col style="width:30%">
+        <col style="width:10%">
+        <col style="width:12%">
+        <col style="width:12%">
+        <col style="width:14%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Service/Product</th>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tabla"></tbody>
+    </table>
+  </div>
+
+  <!-- BUTTONS -->
+  <div style="display:flex; gap:10px; margin:10px 0;">
+    <button class="green" onclick="generarPDF()">Generate PDF</button>
+    <button class="gray"  onclick="nuevo()">New</button>
+  </div>
+
+</div>
+
+<script>
+let productos  = [];
+let editIndex  = null; // null = modo agregar, número = modo editar
+
+function render() {
+  const tabla = document.getElementById("tabla");
+  tabla.innerHTML = "";
+
+  productos.forEach((p, i) => {
+    tabla.innerHTML += `
+      <tr style="${editIndex === i ? 'background:#fef9ec;' : ''}">
+        <td>${p.servicio}</td>
+        <td>${p.desc}</td>
+        <td>${p.qty}</td>
+        <td>$${parseFloat(p.precio).toFixed(2)}</td>
+        <td>$${parseFloat(p.total).toFixed(2)}</td>
+        <td style="display:flex; gap:6px; justify-content:center;">
+          <button class="orange" onclick="editar(${i})">&#9998; Edit</button>
+          <button class="red"    onclick="eliminar(${i})">X</button>
+        </td>
+      </tr>`;
+  });
+}
+
+function agregar() {
+  const servicio = document.getElementById("servicio").value.trim();
+  const desc     = document.getElementById("desc").value.trim();
+  const qty      = parseFloat(document.getElementById("qty").value   || 0);
+  const precio   = parseFloat(document.getElementById("precio").value || 0);
+  const total    = qty * precio;
+
+  if (editIndex !== null) {
+    // Guardar edición
+    productos[editIndex] = { servicio, desc, qty, precio, total };
+    cancelarEdicion();
+  } else {
+    // Agregar nuevo
+    productos.push({ servicio, desc, qty, precio, total });
+    limpiarFormulario();
+  }
+
+  render();
+}
+
+function editar(i) {
+  const p = productos[i];
+  editIndex = i;
+
+  document.getElementById("servicio").value = p.servicio;
+  document.getElementById("desc").value     = p.desc;
+  document.getElementById("qty").value      = p.qty;
+  document.getElementById("precio").value   = p.precio;
+
+  document.getElementById("form-title").textContent  = "Edit Service/Product";
+  document.getElementById("btn-add").textContent     = "Save";
+  document.getElementById("btn-cancel").style.display = "inline-block";
+  document.getElementById("edit-banner").style.display = "block";
+  document.getElementById("app").classList.add("editing");
+
+  // Scroll al formulario
+  document.querySelector(".card-add").scrollIntoView({ behavior: "smooth" });
+
+  render();
+}
+
+function cancelarEdicion() {
+  editIndex = null;
+  limpiarFormulario();
+
+  document.getElementById("form-title").textContent   = "Add Service/Product";
+  document.getElementById("btn-add").textContent      = "Add";
+  document.getElementById("btn-cancel").style.display = "none";
+  document.getElementById("edit-banner").style.display = "none";
+  document.getElementById("app").classList.remove("editing");
+
+  render();
+}
+
+function limpiarFormulario() {
+  document.getElementById("servicio").value = "";
+  document.getElementById("desc").value     = "";
+  document.getElementById("qty").value      = "";
+  document.getElementById("precio").value   = "";
+}
+
+function eliminar(i) {
+  if (editIndex === i) cancelarEdicion();
+  productos.splice(i, 1);
+  if (editIndex !== null && editIndex > i) editIndex--;
+  render();
+}
+
+function nuevo() {
+  productos  = [];
+  editIndex  = null;
+  cancelarEdicion();
+  document.getElementById("empresa").value = "";
+  document.getElementById("cliente").value = "";
+  document.getElementById("notas").value   = "";
+  render();
+}
+
+async function generarPDF() {
+  const data = {
+    empresa:   document.getElementById("empresa").value,
+    cliente:   document.getElementById("cliente").value,
+    notas:     document.getElementById("notas").value,
+    productos: productos
+  };
+
+  const res  = await fetch("/.netlify/functions/generar-pdf", {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+
+  const blob = await res.blob();
+  const url  = window.URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "cotizacion.pdf";
+  a.click();
+}
+</script>
+
+</body>
+</html>
