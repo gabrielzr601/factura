@@ -27,38 +27,18 @@ exports.handler = async (event) => {
   const fillRect = (x, y, w, h, color) =>
     page.drawRectangle({ x, y, width: w, height: h, color });
 
-  // Word-wrap: salto de línea por palabras, y por caracteres si una palabra no cabe
+  // Word-wrap: devuelve array de líneas que caben en maxW
   const wrapText = (str, font, size, maxW) => {
     const words = String(str ?? "").split(" ");
     const lines = [];
     let current = "";
-
     for (const word of words) {
       const test = current ? `${current} ${word}` : word;
-
-      if (font.widthOfTextAtSize(test, size) <= maxW) {
-        // Cabe en la línea actual
-        current = test;
-      } else {
-        // No cabe — guardar línea actual y empezar nueva
+      if (font.widthOfTextAtSize(test, size) > maxW) {
         if (current) lines.push(current);
-
-        // Si la palabra sola tampoco cabe, cortarla carácter a carácter
-        if (font.widthOfTextAtSize(word, size) > maxW) {
-          let chunk = "";
-          for (const char of word) {
-            const testChunk = chunk + char;
-            if (font.widthOfTextAtSize(testChunk, size) > maxW) {
-              lines.push(chunk);
-              chunk = char;
-            } else {
-              chunk = testChunk;
-            }
-          }
-          current = chunk;
-        } else {
-          current = word;
-        }
+        current = word;
+      } else {
+        current = test;
       }
     }
     if (current) lines.push(current);
@@ -70,12 +50,13 @@ exports.handler = async (event) => {
   const MARGIN_R  = 40;
   const RIGHT_X   = width / 2 + 20;
   const FONT_SIZE = 9;
-  const LINE_H    = 13;
-  const PAD_V     = 5;
-  const ROW_H     = LINE_H + PAD_V * 2;
+  const LINE_H    = 13;  // altura de cada línea de texto
+  const PAD_V     = 5;   // padding vertical arriba y abajo dentro de la celda
+  const ROW_H     = LINE_H + PAD_V * 2; // altura mínima de fila = 23pt
 
+  // colWidths=[115, 165, 60, 65, 65]
   const TABLE_X = MARGIN_L;
-  const COLS    = [147, 197, 60, 65, 63];
+  const COLS    = [147, 197, 60, 65, 63]; // suma 532 = width - MARGIN_L - MARGIN_R
   const COL_XS  = COLS.reduce((acc, w, i) => {
     acc.push(i === 0 ? TABLE_X : acc[i - 1] + COLS[i - 1]);
     return acc;
@@ -83,6 +64,7 @@ exports.handler = async (event) => {
   const TABLE_W     = COLS.reduce((a, b) => a + b, 0);
   const TABLE_RIGHT = TABLE_X + TABLE_W;
 
+  // Calcula altura de fila según el contenido de texto de las primeras 2 columnas
   const calcRowH = (cells) => {
     let maxLines = 1;
     [0, 1].forEach((i) => {
@@ -92,23 +74,33 @@ exports.handler = async (event) => {
     return Math.max(ROW_H, maxLines * LINE_H + PAD_V * 2);
   };
 
+  /**
+   * Dibuja una fila.
+   * topY  = coordenada Y del borde SUPERIOR de la fila (pdf-lib: y crece hacia arriba)
+   * Devuelve la altura total usada.
+   */
   const drawRow = (cells, topY, isHeader = false) => {
     const font = isHeader ? fontBold : fontNormal;
     const rowH = isHeader ? ROW_H : calcRowH(cells);
+
+    // borde inferior = topY - rowH
     const botY = topY - rowH;
 
+    // Fondo del encabezado
     if (isHeader) fillRect(TABLE_X, botY, TABLE_W, rowH, GRAY);
 
     cells.forEach((cell, i) => {
       const cellStr = String(cell ?? "");
-      const isRight = !isHeader && i >= 2;
+      const isRight = !isHeader && i >= 2; // solo filas de datos, no encabezado
 
       if (isRight) {
+        // Una línea, centrada verticalmente
         const tw   = font.widthOfTextAtSize(cellStr, FONT_SIZE);
         const xPos = COL_XS[i] + (COLS[i] - tw) / 2;
         const yPos = botY + (rowH - LINE_H) / 2;
         txt(cellStr, xPos, yPos, { font, size: FONT_SIZE });
       } else {
+        // Texto con wrap, alineado desde arriba con padding
         const lines = wrapText(cellStr, font, FONT_SIZE, COLS[i] - 6);
         let lineY   = topY - PAD_V - LINE_H;
         lines.forEach((line) => {
@@ -120,6 +112,7 @@ exports.handler = async (event) => {
       }
     });
 
+    // Bordes: superior, inferior, columnas, cierre derecho
     drawLine(TABLE_X,     topY, TABLE_RIGHT, topY);
     drawLine(TABLE_X,     botY, TABLE_RIGHT, botY);
     COL_XS.forEach((cx) => drawLine(cx, botY, cx, topY));
@@ -128,6 +121,7 @@ exports.handler = async (event) => {
     return rowH;
   };
 
+  // ── Y inicial ───────────────────────────────────────────────────
   let y = height - 50;
 
   const fecha = new Date().toLocaleDateString("en-US", {
@@ -166,12 +160,14 @@ exports.handler = async (event) => {
   y -= 30;
 
   // ═══════════════════════════════════════════════════════════════
-  // TABLA
+  // TABLA DE PRODUCTOS — filas de altura dinámica
+  // topY = borde superior de la fila actual
   // ═══════════════════════════════════════════════════════════════
   const HEADERS = ["Service/Product", "Description", "Qty", "Unit Cost", "Subtotal"];
 
+  // Dibujar header — y es el borde SUPERIOR
   const headerH = drawRow(HEADERS, y, true);
-  y -= headerH;
+  y -= headerH;  // bajar al borde superior de la siguiente fila
 
   const items = productos || [];
   items.forEach((p) => {
@@ -182,7 +178,8 @@ exports.handler = async (event) => {
       `$${parseFloat(p.precio).toFixed(2)}`,
       `$${parseFloat(p.total).toFixed(2)}`,
     ];
-    y -= drawRow(cells, y);
+    const usedH = drawRow(cells, y);
+    y -= usedH;
   });
 
   y -= 20;
@@ -240,6 +237,7 @@ exports.handler = async (event) => {
     });
   }
 
+  // ── Serializar ──────────────────────────────────────────────────
   const pdfBytes = await pdfDoc.save();
   const base64   = Buffer.from(pdfBytes).toString("base64");
 
