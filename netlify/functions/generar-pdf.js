@@ -137,7 +137,7 @@ exports.handler = async (event) => {
   // ═══════════════════════════════════════════════════════════════
   // HEADER
   // ═══════════════════════════════════════════════════════════════
-  txt(empresa || "Company Name", MARGIN_L, y, { font: fontBold, size: 16 });
+  txt(empresa || "Company Name", MARGIN_L, y, { font: fontBold, size: 22 });
 
   ["432-232-4434", "ottovasquez19@gmail.com", "1720 Triumph Trl, Arlington, TX 76002"]
     .forEach((line_text, i) => {
