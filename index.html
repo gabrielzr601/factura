@@ -133,6 +133,41 @@ function agregar() {
   const precio   = parseFloat(document.getElementById("precio").value || 0);
   const total    = qty * precio;
 
+  if (!servicio){
+    alert("Please enter a service/product name.");
+    return;
+  }
+
+  if (!desc){
+    alert("Please enter a description.");
+    return;
+  }
+
+  if (!precio){
+    alert("Please enter a unit price.");
+    return;
+  }
+  
+  if(!qty){
+    alert("Please enter a quantity.");
+    return;
+  }
+
+  if(qty < 0){
+    alert("Quantity cannot be negative.");
+    return;
+  }
+
+  if (precio < 0){
+    alert("Unit price cannot be negative.");
+    return;
+  }
+
+
+    
+  
+  
+
   if (editIndex !== null) {
     // Guardar edición
     productos[editIndex] = { servicio, desc, qty, precio, total };
