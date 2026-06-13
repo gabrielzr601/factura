@@ -20,8 +20,17 @@ button { padding:10px 15px; border:none; cursor:pointer; color:white; border-rad
 .green  { background:#10b981; }
 .gray   { background:#6b7280; }
 .orange { background:#f59e0b; }
-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-th, td { padding:10px; text-align:center; word-wrap:break-word; overflow-wrap:break-word; word-break:break-all; }
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+th, td { padding:10px; text-align:center; word-wrap:break-word; overflow-wrap:break-word; word-break:normal; }
 th { background:#e5e7eb; }
 
 #edit-banner {
@@ -62,15 +71,19 @@ th { background:#e5e7eb; }
     width: 100%;
   }
 
+    .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   table {
-  width:100%;
-  border-collapse:collapse;
-}
+    min-width: 700px;
+  }
 
   th,
   td {
-    font-size: 13px;
-    padding: 8px;
+    white-space: nowrap;
+    word-break: normal;
   }
 
 }
@@ -139,6 +152,7 @@ th { background:#e5e7eb; }
   <!-- TABLE -->
   <div class="card">
     <h3>List</h3>
+    <div class="table-container">
     <table>
       <colgroup>
         <col style="width:22%">
@@ -159,7 +173,9 @@ th { background:#e5e7eb; }
         </tr>
       </thead>
       <tbody id="tabla"></tbody>
+    
     </table>
+    </div>
   </div>
 
   <!-- BUTTONS -->
