@@ -20,8 +20,17 @@ button { padding:10px 15px; border:none; cursor:pointer; color:white; border-rad
 .green  { background:#10b981; }
 .gray   { background:#6b7280; }
 .orange { background:#f59e0b; }
-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-th, td { padding:10px; text-align:center; word-wrap:break-word; overflow-wrap:break-word; word-break:break-all; }
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+th, td { padding:10px; text-align:center; word-wrap:break-word; overflow-wrap:break-word; word-break:normal; }
 th { background:#e5e7eb; }
 
 #edit-banner {
@@ -36,6 +45,78 @@ th { background:#e5e7eb; }
 }
 .editing .card-add {
   border: 2px solid #f59e0b;
+}
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+
+  .container {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 15px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  .row {
+    flex-direction: column;
+  }
+
+  .row input,
+  .row button {
+    width: 100%;
+  }
+
+    .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 700px;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+    word-break: normal;
+  }
+
+}
+
+/* Teléfonos pequeños */
+
+@media (max-width: 480px) {
+
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+
+  input,
+  textarea,
+  button {
+    font-size: 14px;
+  }
+
+  th,
+  td {
+    font-size: 12px;
+  }
+
+}
+.actions {
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  flex-wrap:wrap;
 }
 </style>
 </head>
@@ -71,6 +152,7 @@ th { background:#e5e7eb; }
   <!-- TABLE -->
   <div class="card">
     <h3>List</h3>
+    <div class="table-container">
     <table>
       <colgroup>
         <col style="width:22%">
@@ -91,7 +173,9 @@ th { background:#e5e7eb; }
         </tr>
       </thead>
       <tbody id="tabla"></tbody>
+    
     </table>
+    </div>
   </div>
 
   <!-- BUTTONS -->
@@ -118,8 +202,8 @@ function render() {
         <td>${p.qty}</td>
         <td>$${parseFloat(p.precio).toFixed(2)}</td>
         <td>$${parseFloat(p.total).toFixed(2)}</td>
-        <td style="display:flex; gap:6px; justify-content:center;">
-          <button class="orange" onclick="editar(${i})">&#9998; Edit</button>
+        <td class="actions">
+          <button class="orange" onclick="editar(${i})">&#9998;</button>
           <button class="red"    onclick="eliminar(${i})">X</button>
         </td>
       </tr>`;
