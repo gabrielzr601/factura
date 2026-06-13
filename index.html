@@ -186,8 +186,8 @@ function render() {
         <td>${p.qty}</td>
         <td>$${parseFloat(p.precio).toFixed(2)}</td>
         <td>$${parseFloat(p.total).toFixed(2)}</td>
-        <td style="display:flex; gap:6px; justify-content:center;">
-          <button class="orange" onclick="editar(${i})">&#9998; Edit</button>
+        <td class="actions">
+          <button class="orange" onclick="editar(${i})">&#9998;</button>
           <button class="red"    onclick="eliminar(${i})">X</button>
         </td>
       </tr>`;
